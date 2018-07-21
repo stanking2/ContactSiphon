@@ -1,11 +1,12 @@
 #imap notes from imapclient
 
 >>> import imapclient
+>>> import pprint
+>>> import pyzmail
 >>> imapObj = imapclient.IMAPClient('imap.gmail.com', ssl=True)
 >>>> imapObj.login('stanking2@gmail.com', '33sEsame88')
 b'stanking2@gmail.com authenticated (Success)'
-# can skip these next 2 lines if you already have the folder name
->>> import pprint
+# can skip the next line if you already have the folder name
 >>> pprint.pprint(imapObj.list_folders())
 [((b'\\HasNoChildren',), b'/', 'AARP'),
  ((b'\\HasNoChildren',), b'/', 'Amazon'),
@@ -39,7 +40,6 @@ b'stanking2@gmail.com authenticated (Success)'
 [194, 197, 517, 524, 595, 632, 654, 672, 701, 741, 751, 761, 763, 765, 779, 780, 796, 800, 801, 810, 816, 818, 819, 821, 822, 823, 824, 825, 826, 827, 828, 829, 831, 832, 833]
 >>> rawMessages = imapObj.fetch(UIDs, ['BODY[]'])
 # new section using pyzmail
->>> import pyzmail
 # I want to iterate through all messages...
 >>> message = pyzmail.PyzMessage.factory(rawMessages[833]['BODY[]'])
 # ... so would this work?
@@ -53,7 +53,6 @@ b'stanking2@gmail.com authenticated (Success)'
 [] # usually blank
 >>> message.get_addresses('bcc')
 [] # usually blank
-
 
 
 >>> imapObj.logout()
