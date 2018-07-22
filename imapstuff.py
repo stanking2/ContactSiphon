@@ -3,6 +3,7 @@
 >>> import imapclient
 >>> import pprint
 >>> import pyzmail
+>>> import csv
 >>> imapObj = imapclient.IMAPClient('imap.gmail.com', ssl=True)
 >>>> imapObj.login('stanking2@gmail.com', '33sEsame88')
 b'stanking2@gmail.com authenticated (Success)'
@@ -45,14 +46,10 @@ b'stanking2@gmail.com authenticated (Success)'
 # ... so would this work?
 >>> message = pyzmail.PyzMessage.factory(rawMessages[UIDs]['BODY[]'})
 # then get the addresses! and put them in a csv file
->>> message.get_addresses('from')
-[('From Name'. 'from.name@fake.com')]
->>> message.get_addresses('to')
-[('To Name'. 'to.name@fake.com'), ('Another Name'. 'another.name@fake.com')]
->>> message.get_addresses('cc')
-[] # usually blank
->>> message.get_addresses('bcc')
-[] # usually blank
-
+>>> cFr = message.get_addresses('from')
+>>> cTo = message.get_addresses('to')
+>>> cCc = message.get_addresses('cc')
+>>> cBc = message.get_addresses('bcc')
+# just started creating the csv file...
 
 >>> imapObj.logout()
