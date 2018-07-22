@@ -1,55 +1,27 @@
-#imap notes from imapclient
+# This is my first attempt at an app to pull contact info
+# out of an email account, checking each email for addresses and names.
+import csv
+import imapclient
+import pyzmail
+import pprint
 
->>> import imapclient
->>> import pprint
->>> import pyzmail
->>> import csv
->>> imapObj = imapclient.IMAPClient('imap.gmail.com', ssl=True)
->>>> imapObj.login('stanking2@gmail.com', '33sEsame88')
-b'stanking2@gmail.com authenticated (Success)'
+imapObj = imapclient.IMAPClient('imap.gmail.com', ssl=True)
+imapObj.login('stanking2@gmail.com', '33sEsame88')
 # can skip the next line if you already have the folder name
->>> pprint.pprint(imapObj.list_folders())
-[((b'\\HasNoChildren',), b'/', 'AARP'),
- ((b'\\HasNoChildren',), b'/', 'Amazon'),
- ((b'\\HasNoChildren',), b'/', 'Amy'),
- ((b'\\HasNoChildren',), b'/', 'Banking'),
- ((b'\\HasNoChildren',), b'/', 'Dell'),
- ((b'\\HasNoChildren',), b'/', 'Divorce'),
- ((b'\\HasNoChildren',), b'/', 'EmailAccts'),
- ((b'\\HasNoChildren',), b'/', 'Family'),
- ((b'\\HasNoChildren',), b'/', 'Fitbit'),
- ((b'\\HasNoChildren',), b'/', 'Forwarded FAS'),
- ((b'\\HasNoChildren',), b'/', 'From Yahoo'),
- ((b'\\HasNoChildren',), b'/', 'INBOX'),
- ((b'\\HasChildren',), b'/', 'NRHBC'),
- ((b'\\HasNoChildren',), b'/', 'NRHBC/NRHBC Choir-Prayer'),
- ((b'\\HasNoChildren',), b'/', 'Notes'),
- ((b'\\HasNoChildren',), b'/', 'Online Orders'),
- ((b'\\HasNoChildren',), b'/', 'RedBubble'),
- ((b'\\HasChildren', b'\\Noselect'), b'/', '[Gmail]'),
- ((b'\\All', b'\\HasNoChildren'), b'/', '[Gmail]/All Mail'),
- ((b'\\Drafts', b'\\HasNoChildren'), b'/', '[Gmail]/Drafts'),
- ((b'\\HasNoChildren', b'\\Important'), b'/', '[Gmail]/Important'),
- ((b'\\HasNoChildren', b'\\Sent'), b'/', '[Gmail]/Sent Mail'),
- ((b'\\HasNoChildren', b'\\Junk'), b'/', '[Gmail]/Spam'),
- ((b'\\Flagged', b'\\HasNoChildren'), b'/', '[Gmail]/Starred'),
- ((b'\\HasNoChildren', b'\\Trash'), b'/', '[Gmail]/Trash')]
->>> imapObj.select_folder('INBOX', readonly=True)
-{b'PERMANENTFLAGS': (), b'FLAGS': (b'\\Answered', b'\\Flagged', b'\\Draft', b'\\Deleted', b'\\Seen', b'$NotPhishing', b'$Phishing'), b'UIDVALIDITY': 594705252, b'EXISTS': 35, b'RECENT': 0, b'UIDNEXT': 835, b'HIGHESTMODSEQ': 379823, b'READ-ONLY': [b'']}
->>> UIDs = imapObj.search(['ALL'])
->>> UIDs
-[194, 197, 517, 524, 595, 632, 654, 672, 701, 741, 751, 761, 763, 765, 779, 780, 796, 800, 801, 810, 816, 818, 819, 821, 822, 823, 824, 825, 826, 827, 828, 829, 831, 832, 833]
->>> rawMessages = imapObj.fetch(UIDs, ['BODY[]'])
+imapObj.select_folder('INBOX', readonly=True)
+UIDs = imapObj.search(['ALL'])
+UIDs
+rawMessages = imapObj.fetch(UIDs, ['BODY[]'])
 # new section using pyzmail
 # I want to iterate through all messages...
->>> message = pyzmail.PyzMessage.factory(rawMessages[833]['BODY[]'])
-# ... so would this work?
->>> message = pyzmail.PyzMessage.factory(rawMessages[UIDs]['BODY[]'})
+message = pyzmail.PyzMessage.factory(rawMessages[833]['BODY[]'])
+# ... so would this work? NOPE!
+# message = pyzmail.PyzMessage.factory(rawMessages[UIDs]['BODY[]'})
 # then get the addresses! and put them in a csv file
->>> cFr = message.get_addresses('from')
->>> cTo = message.get_addresses('to')
->>> cCc = message.get_addresses('cc')
->>> cBc = message.get_addresses('bcc')
+cFr = message.get_addresses('from')
+cTo = message.get_addresses('to')
+cCc = message.get_addresses('cc')
+cBc = message.get_addresses('bcc')
 # just started creating the csv file...
 
->>> imapObj.logout()
+imapObj.logout()
