@@ -3,22 +3,22 @@
 # out of an email account, checking each email for addresses and names.
 import csv
 import imapclient
-import pyzmail
 # import pprint
 
 # replace specific host, email address and password with input methods
-imapObj = imapclient.IMAPClient('imap.gmail.com', ssl=True)
-imapObj.login('stanking2@gmail.com', '33sEsame88')
+imapObj = imapclient.IMAPClient('incoming.verizon.net', ssl=True)
+imapObj.login('stan@king-of-tx.com', '33Sesame44')
 
 imapObj.select_folder('Test', readonly=True)
 UIDs = imapObj.search(['ALL'])
 
+import pyzmail
 outputFile = open('output.csv', 'w', newline='') #add code to select filename and location
 outputWriter = csv.writer(outputFile)
 rawMessages = imapObj.fetch(UIDs, ['BODY[]'])
 for UID in UIDs:
-# new section using pyzmail
-# I want to iterate through all messages... 
+    # new section using pyzmail
+    # I want to iterate through all messages... 
     message = pyzmail.PyzMessage.factory(rawMessages[UID]['BODY[]'])
     cFr = message.get_addresses('from')
     cTo = message.get_addresses('to')
