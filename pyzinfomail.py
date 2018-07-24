@@ -36,22 +36,21 @@ if not os.path.isfile(filename):
 
 msg=pyzmail.PyzMessage.factory(open(filename, 'rb'))
 
-print 'Subject: %r' % (msg.get_subject(), )
-print 'From: %r' % (msg.get_address('from'), )
-print 'To: %r' % (msg.get_addresses('to'), )
-print 'Cc: %r' % (msg.get_addresses('cc'), )
-print 'Date: %r' % (msg.get('date', ''), )
-print 'Message-Id: %r' % (msg.get('message-id', ''), )
+print('Subject: %r' % (msg.get_subject(), ))
+print('From: %r' % (msg.get_address('from'), ))
+print('To: %r' % (msg.get_addresses('to'), ))
+print('Cc: %r' % (msg.get_addresses('cc'), ))
+print('Date: %r' % (msg.get('date', ''), ))
+print('Message-Id: %r' % (msg.get('message-id', ''), ))
 
 for mailpart in msg.mailparts:
-    # dont forget to be careful to sanitize 'filename' and be carefull
+    # don't forget to be careful to sanitize 'filename' and be careful
     # for filename collision, to before to save :
-    print '   %sfilename=%r type=%s charset=%s desc=%s size=%d' % ('*'if mailpart.is_body else ' ', mailpart.filename, mailpart.type, mailpart.charset, mailpart.part.get('Content-Description'), 0 if mailpart.get_payload()==None else len(mailpart.get_payload()))
-
-    if mailpart.is_body=='text/plain':
+    print('   %sfilename=%r type=%s charset=%s desc=%s size=%d' % ('*'if mailpart.is_body else ' ', mailpart.filename, mailpart.type, mailpart.charset, mailpart.part.get('Content-Description'), 0 if mailpart.get_payload()==None else len(mailpart.get_payload()))
+    if (mailpart.is_body=='text/plain'):
         # print first 3 lines
         payload, used_charset=pyzmail.decode_text(mailpart.get_payload(), mailpart.charset, None)
         for line in payload.split('\n')[:3]:
             # be careful console can be unable to display unicode characters
             if line:
-                print '       >', line
+                print('       >', line)
