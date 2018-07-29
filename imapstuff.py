@@ -1,13 +1,16 @@
 #! python3
 # This is my first attempt at an app to pull contact info
 # out of an email account, checking each email for addresses and names.
-import csv
+import csv, sys
 import imapclient
-# import pprint
 
-# replace specific host, email address and password with input methods
-imapObj = imapclient.IMAPClient('incoming.verizon.net', ssl=True)
-imapObj.login('stan@king-of-tx.com', '33Sesame44')
+# replace specific host with input methods
+mailHost = 'incoming.verizon.net'
+imapObj = imapclient.IMAPClient(mailHost, ssl=True)
+userName = input('User Name:')
+passWord = input('Password:')
+imapObj.login(userName, passWord)
+sys.exit()
 
 imapObj.select_folder('Test', readonly=True)
 UIDs = imapObj.search(['ALL'])

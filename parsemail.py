@@ -1,14 +1,20 @@
-#!/bin/env python
+#! python3
 #
 # parsemail.py
 #
 # (c) Alain Spineux alain.spineux@gmail.com
 
-import sys, os, re, StringIO
-import email, mimetypes
+import sys
+import io
+import os
+import re
+import functools
+import email
+import mimetypes
 
-invalid_chars_in_filename='<>:"/\\|?*\%\''+reduce(lambda x,y:x+chr(y), range(32), '')
-invalid_windows_name='CON PRN AUX NUL COM1 COM2 COM3 COM4 COM5 COM6 COM7 COM8 COM9 LPT1 LPT2 LPT3 LPT4 LPT5 LPT6 LPT7 LPT8 LPT9'.split()
+invalid_chars_in_filename=r'<>:"/\\|?*\%\''+functools.reduce(lambda x,y:x+chr(y), range(32), '')
+invalid_windows_name='CON PRN AUX NUL COM1 COM2 COM3 COM4 COM5 COM6 COM7 COM8 COM9 LPT1 LPT2 \
+    LPT3 LPT4 LPT5 LPT6 LPT7 LPT8 LPT9'.split()
 
 # email address REGEX matching the RFC 2822 spec from perlfaq9
 #    my $atom       = qr{[a-zA-Z0-9_!#\$\%&'*+/=?\^`{}~|\-]+};
@@ -29,12 +35,13 @@ quoted=r'"(?:\\[^\r\n]|[^\\"])*"'
 local="(?:"  +  dot_atom  +  "|"  +  quoted  +  ")"
 domain_lit=r"\[(?:\\\S|[\x21-\x5a\x5e-\x7e])*\]"
 domain="(?:"  +  dot_atom  +  "|"  +  domain_lit  +  ")"
-addr_spec=local  +  "\@"  +  domain
+addr_spec=local  +  r"\@"  +  domain
 
 email_address_re=re.compile('^'+addr_spec+'$')
 
 class Attachment:
-    def __init__(self, part, filename=None, type=None, payload=None, charset=None, content_id=None, description=None, disposition=None, sanitized_filename=None, is_body=None):
+    def __init__(self, part, filename=None, type=None, payload=None, charset=None, content_id=None, \
+        description=None, disposition=None, sanitized_filename=None, is_body=None):
         self.part=part          # original python part
         self.filename=filename  # filename in unicode (if any) 
         self.type=type          # the mime-type
@@ -57,15 +64,18 @@ def getmailheader(header_text, default="ascii"):
     except email.Errors.HeaderParseError:
         # This already append in email.base64mime.decode()
         # instead return a sanitized ascii string
-        # this faile '=?UTF-8?B?15HXmdeh15jXqNeVINeY15DXpteUINeTJ9eV16jXlSDXkdeg15XXldeUINem15PXpywg15TXptei16bXldei15nXnSDXqdecINek15zXmdeZ?==?UTF-8?B?157XldeR15nXnCwg157Xldek16Ig157Xl9eV15wg15HXodeV15bXnyDXk9ec15DXnCDXldeh15gg157Xl9eR16rXldeqINep15wg15HXmdeQ?==?UTF-8?B?15zXmNeZ?='
+        # this fails '=?UTF-8?B?15HXmdeh15jXqNeVINeY15DXpteUINeTJ9eV16jXlSDXkdeg15XXldeUINem15PXpyw' & \
+        #   'g15TXptei16bXldei15nXnSDXqdecINek15zXmdeZ?==?UTF-8?B?157XldeR15nXnCwg157Xldek16Ig157Xl' & \
+        #   '9eV15wg15HXodeV15bXnyDXk9ec15DXnCDXldeh15gg157Xl9eR16rXldeqINep15wg15HXmdeQ?==?UTF-8?B' & \
+        #   '?15zXmNeZ?='
         return header_text.encode('ascii', 'replace').decode('ascii')
     else:
         for i, (text, charset) in enumerate(headers):
             try:
-                headers[i]=unicode(text, charset or default, errors='replace')
+                headers[i]=str.encode(text, charset or default, errors='replace')
             except LookupError:
                 # if the charset is unknown, force default 
-                headers[i]=unicode(text, default, errors='replace')
+                headers[i]=str.encode(text, default, errors='replace')
         return u"".join(headers)
 
 def getmailaddresses(msg, name):
@@ -120,7 +130,7 @@ def _search_message_bodies(bodies, part):
         if type=='multipart/related':
             # the first part or the one pointed by start 
             start=part.get_param('start', None)
-            related_type=part.get_param('type', None)
+            # related_type=part.get_param('type', None)
             for i, subpart in enumerate(part.get_payload()):
                 if (not start and i==0) or (start and start==subpart.get('Content-Id')):
                     _search_message_bodies(bodies, subpart)
@@ -150,9 +160,9 @@ def _search_message_bodies(bodies, part):
             for subpart in part.get_payload():
                 tmp_bodies=dict()
                 _search_message_bodies(tmp_bodies, subpart)
-                for k, v in tmp_bodies.iteritems():
+                for k, v in tmp_bodies.items():
                     if not subpart.get_param('attachment', None, 'content-disposition')=='':
-                        # if not an attachment, initiate value if not already found
+                        # if not an attacdhment, initiate value if not already found
                         bodies.setdefault(k, v)
             return
     else:
@@ -175,7 +185,7 @@ def get_mail_contents(msg):
     # retrieve messages of the email
     bodies=search_message_bodies(msg)
     # reverse bodies dict
-    parts=dict((v,k) for k, v in bodies.iteritems())
+    parts=dict((v,k) for k, v in bodies.items())
 
     # organize the stack to handle deep first search
     stack=[ msg, ]
@@ -187,12 +197,13 @@ def get_mail_contents(msg):
             # I don't want to explore the tree deeper here and just save source using msg.as_string()
             # but I don't use msg.as_string() because I want to use mangle_from_=False 
             from email.Generator import Generator
-            fp = StringIO.StringIO()
+            fp = io.StringIO()
             g = Generator(fp, mangle_from_=False)
             g.flatten(part, unixfrom=False)
             payload=fp.getvalue()
             filename='mail.eml'
-            attachments.append(Attachment(part, filename=filename, type=type, payload=payload, charset=part.get_param('charset'), description=part.get('Content-Description')))
+            attachments.append(Attachment(part, filename=filename, type=type, payload=payload, \
+                charset=part.get_param('charset'), description=part.get('Content-Description')))
         elif part.is_multipart():
             # insert new parts at the beginning of the stack (deep first search)
             stack[:0]=part.get_payload()
@@ -207,7 +218,9 @@ def get_mail_contents(msg):
             elif part.get_param('attachment', None, 'content-disposition')=='':
                 disposition='attachment'
                 
-            attachments.append(Attachment(part, filename=filename, type=type, payload=payload, charset=charset, content_id=part.get('Content-Id'), description=part.get('Content-Description'), disposition=disposition, is_body=parts.get(part)))
+            attachments.append(Attachment(part, filename=filename, type=type, payload=payload, 
+                charset=charset, content_id=part.get('Content-Id'), description=part.get('Content' & \
+                '-Description'), disposition=disposition, is_body=parts.get(part)))
 
     return attachments
 
@@ -287,14 +300,16 @@ wLAIvcgAAAAASUVORK5CYII=
     from_=('', '') if not from_ else from_[0]
     tos=getmailaddresses(msg, 'to')
         
-    print 'Subject: %r' % subject
-    print 'From: %r' % (from_, )
-    print 'To: %r' % (tos, )
+    print('Subject: %r' % subject)
+    print('From: %r' % (from_, ))
+    print('To: %r' % (tos, ))
     
     for attach in attachments:
         # dont forget to be careful to sanitize 'filename' and be carefull
         # for filename collision, to before to save :
-        print '\tfilename=%r is_body=%s type=%s charset=%s desc=%s size=%d' % (attach.filename, attach.is_body, attach.type, attach.charset, attach.description, 0 if attach.payload==None else len(attach.payload))
+        print('\tfilename=%r is_body=%s type=%s charset=%s desc=%s size=%d' % \
+            (attach.filename, attach.is_body, attach.type, attach.charset, attach.description, \
+            0 if attach.payload==None else len(attach.payload)))
 
         if attach.is_body=='text/plain':
             # print first 3 lines
@@ -302,4 +317,4 @@ wLAIvcgAAAAASUVORK5CYII=
             for line in payload.split('\n')[:3]:
                 # be careful console can be unable to display unicode characters
                 if line:
-                    print '\t\t', line
+                    print('\t\t', line)
