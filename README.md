@@ -1,4 +1,4 @@
-An app to pull email addresses
+# An app to pull email addresses
 
 Stan King committed
 49a5bdc

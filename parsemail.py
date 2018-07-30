@@ -4,13 +4,8 @@
 #
 # (c) Alain Spineux alain.spineux@gmail.com
 
-import sys
-import io
-import os
-import re
-import functools
-import email
-import mimetypes
+import sys, io, os, re
+import functools, email, mimetypes
 
 invalid_chars_in_filename=r'<>:"/\\|?*\%\''+functools.reduce(lambda x,y:x+chr(y), range(32), '')
 invalid_windows_name='CON PRN AUX NUL COM1 COM2 COM3 COM4 COM5 COM6 COM7 COM8 COM9 LPT1 LPT2 \
