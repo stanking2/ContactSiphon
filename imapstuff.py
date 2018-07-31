@@ -50,9 +50,19 @@ while k < len(folders):
     print(folders[k][2] + ' completed.')
     k = k + 1
 
+# Step 6: Eliminate the duplicate entries
+    # sort the csv
+    # concatenate addresses
+    # compare one row to the next, if == then delete second row
+# Step 6B: Pare the entries
+    # remove brackets []
+    # start new line at '), ('
+    # split addresses into name and email address cells
+    # remove all wrappers: ()[]''
+    # sort and remove duplicates again
+
 # Step 5: Validate the addresses
 
-# Step 6: Eliminate the duplicate entries
 print('Done! ' + str(adrs) + ' emails pulled for addresses.')
 
 # Step 7: Close the CSV and the connection]
