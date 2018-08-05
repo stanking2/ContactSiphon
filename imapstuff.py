@@ -32,21 +32,21 @@ outputWriter.writerow(['FROM', 'TO', 'CC', 'BCC'])
 # Step 3: Wrap Steps 4-5 to iterate through all folders in the IMAP account
 folders = imapObj.list_folders()
 k = 0
-adrs = 0
+emails: int = 0
+adrs: int = 0
 while k < len(folders):
     # print(folders[k][2])
     # Step 4: Pull the emails in a folder
     imapObj.select_folder(folders[k][2], readonly=True)
     UIDs = imapObj.search(['ALL'])  # Can I chg to ENVELOPE HERE AS WELL?
-    print('Now processing ' + folders[k][2] + '...')  # Add count of msgs
 
     # Step 5: Iterate through the emails and pull out the addresses
     rawMessages = imapObj.fetch(UIDs, ['BODY[]'])  # Chg to ENVELOPE
     if len(UIDs) == 1:
-        msgtxt = ' message.'
+        msgtxt = ' message from '
     else:
-        msgtxt = ' messages.'
-    print(folders[k][2] + ' contains ' + str(len(UIDs)) + msgtxt)
+        msgtxt = ' messages from '
+    print('Now processing ' + str(len(UIDs)) + msgtxt + folders[k][2] + '...')  # Add count of msgs
     for i in UIDs:
         imapObj.fetch(i, 'BODY[]')
         message = pyzmail.PyzMessage.factory(rawMessages[i][b'BODY[]'])
@@ -59,15 +59,16 @@ while k < len(folders):
         try:
             outputWriter.writerow([cFr, to_unicode(cTo), to_unicode(cCc), to_unicode(cBc)])
         except UnicodeEncodeError as err:
-            outputWriter.writerow(['', to_unicode(cTo), to_unicode(cCc), to_unicode(cBc)])
-        adrs = adrs + 1
-    print(folders[k][2] + ' completed.')
+            outputWriter.writerow([[], to_unicode(cTo), to_unicode(cCc), to_unicode(cBc)])
+        emails = emails + 1
+        adrs = adrs + len(cFr) + len(cTo) + len(cCc) + len(cBc)
+    print('    ...' + folders[k][2] + ' completed.')
     k = k + 1
 
 # Step 5: Validate the addresses
 
 # Step 6: Eliminate the duplicate entries
-print('Done! ' + str(adrs) + ' emails pulled for addresses.')
+print('Done! ' + str(emails) + ' emails pulled; ' + str(adrs) + ' addresses siphoned out')
 
 # Step 7: Close the CSV and the connection]
 outputFile.close()
