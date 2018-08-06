@@ -3,57 +3,73 @@
 # out of an email account, checking each email for addresses and names.
 # With credit to Menno Smits (imapclient), Alain Spineux (pyzmail), and
 # Al Sweigart (chps. 14 & 16 of 'Automate the Boring Stuff With Python')
-import csv, sys
-import imaplib, pprint
-import imapclient, pyzmail
+import csv
+import imaplib
+import imapclient
+from imapclient.util import to_unicode
+import pyzmail
 imaplib._MAXLINE = 10000000
 
-## Step 1: Establish a connection to an email server and account
-mailHost = 'imap.mail.yahoo.com' #to be replaced later with user input
+# Establish a connection to an email server and account
+mailHost = 'imap.mail.att.net'
+# TODO to be replaced later with GUI input
 imapObj = imapclient.IMAPClient(mailHost, ssl=True)
-userName = 'stan@king-of-tx.com' #remove
-passWord = '33Sesame44' #remove
-##userName = input('User Name:')
-##passWord = input('Password:')
-if(imapObj.login(userName, passWord))!=b'LOGIN completed':
-    print('Connection failed. Exiting program.') #add retry code
-    sys.exit()
+userName = input('User Name:')
+passWord = input('Password:')
+# TODO use getpass to conceal password
+# TODO convert to try/catch connection and authentication errors
+print(imapObj.login(userName, passWord))
+# if(imapObj.login(userName, passWord) != b'LOGIN completed'):
+#     print('Connection failed. Exiting program.')
+#     sys.exit()  # b'[AUTHENTICATIONFAILED] LOGIN Invalid credentials'
+#     # refer to imaplib line 592 to trap no/bad
+# else:
+#     print('Successful connection!')
 
-## Step 2: Create the CSV file to hold the data
-outputFile = open('output.csv', 'w', newline='') #add code to select filename and location
+# Create the CSV file to hold the siphoned contacts;may push this until after the data pull
+outputFile = open('output-' + userName + '.csv', 'w', newline='')
+# TODO add code to select filename and location
 outputWriter = csv.writer(outputFile)
-adrs = 0
+outputWriter.writerow(['FROM', 'TO', 'CC', 'BCC'])
 
-## Step 3: Wrap Steps 4-5 to iterate through all folders in the IMAP account
+# Iterate through the folders and  pull the addresses
 folders = imapObj.list_folders()
 k = 0
+emails = 0
+adrs = 0
 while k < len(folders):
     # print(folders[k][2])
-    ## Step 4: Pull the emails in a folder
+    # Step 4: Pull the emails in a folder
     imapObj.select_folder(folders[k][2], readonly=True)
-    UIDs = imapObj.search(['ALL'])
-    print('Now processing ' + folders[k][2] + '...')
+    UIDs = imapObj.search(['ALL'])  # Can I chg to ENVELOPE HERE AS WELL?
+    print('Now processing ' + folders[k][2] + '...')  # Add count of msgs
 
-    ## Step 5: Iterate through the emails and pull out the addresses
+    # Step 5: Iterate through the emails and pull out the addresses
     rawMessages = imapObj.fetch(UIDs, ['BODY[]'])
+    # TODO change 'BODY' references to 'ENVELOPE' or the individual address fields
     for i in UIDs:
         imapObj.fetch(i, 'BODY[]')
         message = pyzmail.PyzMessage.factory(rawMessages[i][b'BODY[]'])
-        cFr = message.get_addresses('from')
+        cFr = list(message.get_address('from'))
+        cFr[0] = to_unicode(cFr[0])
         cTo = message.get_addresses('to')
         cCc = message.get_addresses('cc')
         cBc = message.get_addresses('bcc')
         # trap UnicodeEncodeError
-        outputWriter.writerow([cFr, cTo, cCc, cBc])
-        adrs = adrs + 1
+        try:
+            outputWriter.writerow([cFr, to_unicode(cTo), to_unicode(cCc), to_unicode(cBc)])
+        except UnicodeEncodeError as err:
+            outputWriter.writerow([[], to_unicode(cTo), to_unicode(cCc), to_unicode(cBc)])
+        emails = emails + 1
+        adrs = adrs + len(cFr) + len(cTo) + len(cCc) + len(cBc)
     print(folders[k][2] + ' completed.')
     k = k + 1
 
-## Step 5: Validate the addresses
+# Step 5: Validate the addresses
 
-## Step 6: Eliminate the duplicate entries
-print('Done! ' + str(adrs) + ' emails pulled for addresses.')
+# Step 6: Eliminate the duplicate entries
+print('Done! ' + str(emails) + ' emails pulled; ' + str(adrs) + ' addresses siphoned out.')
 
-## Ste[ 7: Close the CSV and the connection]
+# Step 7: Close the CSV and the connection]
 outputFile.close()
 imapObj.logout()
