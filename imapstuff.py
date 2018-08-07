@@ -4,8 +4,8 @@
 # This is my first attempt at an app to pull contact info
 # out of an email account, checking each email for addresses and names.
 # With credit to:
-# - Piers Lauder (imaplib)<piers@communitysolutions.com.au>
-# - Menno Finlay-Smits (imapclient) <inbox@menno.io>
+# - Piers Lauder (imaplib)
+# - Menno Finlay-Smits (imapclient)
 # - Alain Spineux (pyzmail)
 # - Al Sweigart (chps. 14 & 16 of 'Automate the Boring Stuff With Python')
 
@@ -47,6 +47,12 @@ except LoginError as err:
 # Iterate through the folders and  pull the addresses
 folders = imapObj.list_folders()
 folders.sort()
+# fldrs = 0
+# while fldrs < len(folders):
+#     print(folders[fldrs][2])
+#     fldrs += 1
+# print(str(len(folders)) + 'folders in this mailbox.')
+# sys.exit()
 addrlist: List[Union[List[tuple], Any]] = []
 fldrs = 0
 msgs = 0
