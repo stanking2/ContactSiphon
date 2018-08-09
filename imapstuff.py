@@ -10,24 +10,24 @@
 # - Al Sweigart (chps. 14 & 16 of 'Automate the Boring Stuff With Python')
 
 import csv
-import sys
-import socket
 import getpass
 import imaplib
-from typing import List, Any, Union
-import winsound
-import imapclient
-from imapclient.exceptions import LoginError
-import pyzmail
-from tilities import parse_address
+import socket
+import sys
 import timeit
+import winsound
+from typing import List
+
+import imapclient
+import pyzmail
+from imapclient.exceptions import LoginError
+
+from tilities import get_contacts
 
 imaplib._MAXLINE = 10000000
 start = timeit.default_timer()
-print(str(start))
 # Establish a connection to an email server and account
 mailHost = 'imap.mail.att.net'
-# TODO to be replaced later with GUI input
 try:
     imapObj = imapclient.IMAPClient(mailHost, ssl=True)
 except socket.gaierror as err:
@@ -47,70 +47,38 @@ except LoginError as err:
 # Iterate through the folders and  pull the addresses
 folders = imapObj.list_folders()
 folders.sort()
-# fldrs = 0
-# while fldrs < len(folders):
-#     print(folders[fldrs][2])
-#     fldrs += 1
-# print(str(len(folders)) + 'folders in this mailbox.')
-# sys.exit()
-addrlist: List[Union[List[tuple], Any]] = []
+addrlist: List = []
 fldrs = 0
 msgs = 0
-adrs = 0
 while fldrs < len(folders):
-    imapObj.select_folder(folders[fldrs][2], readonly=True)
+    imapObj.select_folder(folders[fldrs][2], True)
     UIDs = imapObj.search(['ALL'])
     if len(UIDs) == 1:
         msgtxt = " message from '"
     else:
         msgtxt = " messages from '"
     print('Now processing ' + str(len(UIDs)) + msgtxt + folders[fldrs][2] + "'...")  # Add count of msgs
-    if folders[fldrs][2] in ['Bulk Mail', 'Inbox', 'Junk E-mail', 'Sent Messages', 'Trash']:
-        winsound.PlaySound("Alarm03.wav", winsound.SND_FILENAME)
-    # Iterate through the emails and pull out the addresses
     rawMessages = imapObj.fetch(UIDs, ['BODY[]'])
     for i in UIDs:
         imapObj.fetch(i, 'BODY[]')
         message = pyzmail.PyzMessage.factory(rawMessages[i][b'BODY[]'])
-        cFr = message.get_address('from')
-        parsed = parse_address(cFr[0], cFr[1], userName)
-        if parsed is not False:
-            addrlist.append(parsed)
-            adrs += 1
-        cTo = message.get_addresses('to')
-        if len(cTo) > 0:
-            for j in range(len(cTo)):
-                parsed = parse_address(cTo[j][0], cTo[j][1], userName)
-                if parsed is not False:
-                    addrlist.append(parsed)
-                    adrs += 1
-        cCc = message.get_addresses('cc')
-        if len(cCc) > 0:
-            for j in range(len(cCc)):
-                parsed = parse_address(cCc[j][0], cCc[j][1], userName)
-                if parsed is not False:
-                    addrlist.append(parsed)
-                    adrs += 1
-        cBc = message.get_addresses('bcc')
-        if len(cBc) > 0:
-            for j in range(len(cBc)):
-                parsed = parse_address(cBc[j][0], cBc[j][1], userName)
-                if parsed is not False:
-                    addrlist.append(parsed)
-                    adrs += 1
+        addrlist = get_contacts(message, 'from', userName, addrlist)
+        addrlist = get_contacts(message, 'to', userName, addrlist)
+        addrlist = get_contacts(message, 'cc', userName, addrlist)
+        addrlist = get_contacts(message, 'bcc', userName, addrlist)
         msgs += 1
     print("     ...'" + folders[fldrs][2] + "' completed.")
     fldrs += 1
-winsound.Beep(440, 2000)
-winsound.MessageBeep(winsound.MB_OK)
 outputFile = open('parsed-' + userName + '.csv', 'w', newline='')
 outputWriter = csv.writer(outputFile)
 headrow = ('Name', 'Email')
 outputWriter.writerow(headrow)
 addrlist.sort()
-# TODO remove duplicates, and validate addresses
+uniqueaddr = 0
 stra = ''
+straold = ''
 strb = ''
+strbold = ''
 for j in range(len(addrlist)):
     if len(str(addrlist[j][0]).strip() + str(addrlist[j][1]).strip()) > 0:
         stra = str(addrlist[j][0]).strip()
@@ -118,16 +86,18 @@ for j in range(len(addrlist)):
         if stra == strb:
             stra = ''
         strb = strb.lower()
-        try:
-            bodyrow = (stra, strb)
-            outputWriter.writerow(bodyrow)
-        except UnicodeEncodeError as err:
-            ...
+        if (stra + strb) != (straold + strbold):
+            try:
+                bodyrow = (stra, strb)
+                uniqueaddr += 1
+                outputWriter.writerow(bodyrow)
+            except UnicodeEncodeError as err:
+                ...
+    straold = stra
+    strbold = strb
 outputFile.close()
-print('Done! ' + str(msgs) + ' emails pulled; ' + str(adrs) + ' addresses siphoned out.')
+print('Done! ' + str(msgs) + ' emails pulled; ' + str(uniqueaddr) + ' addresses siphoned out.')
 imapObj.logout()
 stop = timeit.default_timer()
 print(stop - start)
-winsound.PlaySound("*", winsound.SND_ALIAS)
-winsound.PlaySound("*", winsound.SND_ALIAS)
 winsound.PlaySound("tada.wav", winsound.SND_FILENAME)
